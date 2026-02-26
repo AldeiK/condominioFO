@@ -3,20 +3,18 @@ import Pusher from 'pusher-js';
 
 window.Pusher = Pusher;
 
+// configuración compartida con componentes
 const echo = new Echo({
-    broadcaster: 'pusher',
-    key: 'ABCDEFG',
-    cluster: 'mt1',
-    wsHost: 'localhost',
-    wsPort: 6001,
-    wssPort: 6001,
+    broadcaster: 'reverb',
+    key: 'local',
+    wsHost: '127.0.0.1',
+    wsPort: 8080,
+    wssPort: 8080,
     forceTLS: false,
     enabledTransports: ['ws', 'wss'],
-    auth: {
-        headers: {
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
-        }
-    }
+    reconnect: true,
+    reconnectionAttempts: 10,
+    reconnectionDelay: 2000,
 });
 
 export default echo;
