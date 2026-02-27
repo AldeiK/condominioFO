@@ -45,6 +45,17 @@
   justify-content: center;
 }
 
+/* breve pulso cuando llega nueva notificación */
+.notification-badge.pulse {
+  animation: notifPulse 900ms cubic-bezier(.2,.9,.2,1);
+}
+
+@keyframes notifPulse {
+  0% { transform: scale(1); box-shadow: 0 0 0 rgba(239,68,68,0.0); }
+  40% { transform: scale(1.18); box-shadow: 0 6px 18px rgba(239,68,68,0.18); }
+  100% { transform: scale(1); box-shadow: 0 0 0 rgba(239,68,68,0); }
+}
+
 /* DROPDOWN */
 .notification-dropdown {
   position: absolute;
@@ -155,4 +166,44 @@
   text-align: center;
   color: #c7d2fe;
   font-weight: 600;
+}
+
+/* dropdown transition (react-transition-group) */
+.notif-dropdown-enter {
+  transform: translateY(-6px) scale(.995);
+  opacity: 0;
+}
+.notif-dropdown-enter-active {
+  transform: translateY(0) scale(1);
+  opacity: 1;
+  transition: transform 220ms cubic-bezier(.2,.9,.2,1), opacity 220ms ease;
+}
+.notif-dropdown-exit {
+  transform: translateY(0) scale(1);
+  opacity: 1;
+}
+.notif-dropdown-exit-active {
+  transform: translateY(-6px) scale(.995);
+  opacity: 0;
+  transition: transform 180ms cubic-bezier(.2,.9,.2,1), opacity 180ms ease;
+}
+
+/* badge transition (react-transition-group) */
+.badge-enter {
+  transform: scale(.85);
+  opacity: 0;
+}
+.badge-enter-active {
+  transform: scale(1);
+  opacity: 1;
+  transition: transform 260ms cubic-bezier(.2,.9,.2,1), opacity 200ms ease;
+}
+.badge-exit {
+  transform: scale(1);
+  opacity: 1;
+}
+.badge-exit-active {
+  transform: scale(.85);
+  opacity: 0;
+  transition: transform 180ms ease, opacity 160ms ease;
 }

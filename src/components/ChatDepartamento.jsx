@@ -1,7 +1,30 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useTransition } from 'react';
+import { TransitionGroup, CSSTransition } from 'react-transition-group';
+
+// wrapper component to provide nodeRef for each message transition (prevents findDOMNode error)
+function MessageItem({ msg, own }) {
+  const ref = useRef(null);
+  return (
+    <CSSTransition nodeRef={ref} timeout={300} classNames="msg">
+      <div ref={ref} className={`message ${own ? 'own' : ''}`}>
+        <div className="message-header">
+          <strong className="message-user">{msg.user_name}</strong>
+          <span className="message-time">
+            {new Date(msg.created_at).toLocaleTimeString('es-ES', { 
+              hour: '2-digit', 
+              minute: '2-digit' 
+            })}
+          </span>
+        </div>
+        <p className="message-text">{msg.message}</p>
+      </div>
+    </CSSTransition>
+  );
+}
 import './ChatDepartamento.css';
 import echo from '../services/echo';
 import { useAuth } from '../contexts/AuthContext';
+import TransitionAlert from './TransitionAlert';
 
 export default function ChatDepartamento() {
   const [messages, setMessages] = useState([]);
@@ -9,6 +32,7 @@ export default function ChatDepartamento() {
   const [userName, setUserName] = useState('Usuario ' + Math.floor(Math.random() * 1000));
   const [departmentId, setDepartmentId] = useState('Admin');
   const [loading, setLoading] = useState(false);
+  const [actionLoading, setActionLoading] = useState(null);
   const [departments] = useState([
     { id: 'Admin', name: '🏢 Administración' },
     { id: 'Mantenimiento', name: '🔧 Mantenimiento' },
@@ -41,12 +65,15 @@ export default function ChatDepartamento() {
       const res = await authFetch(`http://127.0.0.1:8000/api/messages/${dept}`);
       if (res.ok) {
         const data = await res.json();
-        setMessages(Array.isArray(data) ? data : []);
+        startTransition(() => setMessages(Array.isArray(data) ? data : []));
       }
     } catch (err) {
       console.error('Error loading messages:', err);
     }
   };
+
+  const [isPending, startTransition] = useTransition();
+  const [alert, setAlert] = useState({ show: false, message: '', type: 'success' });
 
   useEffect(() => {
     setLoading(true);
@@ -102,8 +129,9 @@ export default function ChatDepartamento() {
     setNewMessage('');
     bcRef.current?.postMessage(optimistic);
 
+    setActionLoading('send');
     try {
-      await authFetch('http://127.0.0.1:8000/api/messages', {
+      const res = await authFetch('http://127.0.0.1:8000/api/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -112,8 +140,16 @@ export default function ChatDepartamento() {
           message: optimistic.message,
         }),
       });
+      if (res.ok) {
+        setAlert({ show: true, message: 'Mensaje enviado', type: 'success' });
+      } else {
+        setAlert({ show: true, message: 'No se pudo enviar', type: 'error' });
+      }
     } catch (err) {
       console.error('Error sending message:', err);
+      setAlert({ show: true, message: 'Error enviando mensaje', type: 'error' });
+    } finally {
+      setActionLoading(null);
     }
   };
 
@@ -157,20 +193,15 @@ export default function ChatDepartamento() {
         {loading && <div className="loading">⏳ Cargando mensajes...</div>}
         {messages.length === 0 && !loading && <div className="no-messages">📭 No hay mensajes aún. ¡Sé el primero!</div>}
         <div className="messages">
-          {messages.map((msg) => (
-            <div key={msg.id || msg.created_at} className={`message ${msg.user_name === userName ? 'own' : ''}`}>
-              <div className="message-header">
-                <strong className="message-user">{msg.user_name}</strong>
-                <span className="message-time">
-                  {new Date(msg.created_at).toLocaleTimeString('es-ES', { 
-                    hour: '2-digit', 
-                    minute: '2-digit' 
-                  })}
-                </span>
-              </div>
-              <p className="message-text">{msg.message}</p>
-            </div>
-          ))}
+          <TransitionGroup component={null}>
+            {messages.map((msg) => (
+              <MessageItem
+                key={msg.id || msg.created_at}
+                msg={msg}
+                own={msg.user_name === userName}
+              />
+            ))}
+          </TransitionGroup>
           <div ref={messagesEndRef} />
         </div>
       </div>
@@ -183,10 +214,15 @@ export default function ChatDepartamento() {
           placeholder="Escribe tu mensaje aquí..."
           type="text"
         />
-        <button className="send-button" type="submit">
-          ➤ Enviar
+        <button className="send-button" type="submit" disabled={actionLoading === 'send'}>
+          {actionLoading === 'send' ? (
+            <><span className="spinner" aria-hidden="true"></span> Enviando...</>
+          ) : (
+            '➤ Enviar'
+          )}
         </button>
       </form>
+      <TransitionAlert show={alert.show} message={alert.message} type={alert.type} onClose={() => setAlert({ ...alert, show: false })} />
     </div>
   );
 }

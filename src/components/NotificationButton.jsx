@@ -1,7 +1,9 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useTransition } from 'react';
+import { CSSTransition } from 'react-transition-group';
 import echo from '../services/echo';
 import './NotificationButton.css';
 import { useAuth } from '../contexts/AuthContext';
+import TransitionAlert from './TransitionAlert';
 
 export default function NotificationButton() {
   const [notifications, setNotifications] = useState([]);
@@ -9,18 +11,26 @@ export default function NotificationButton() {
   const [connected, setConnected] = useState(false);
   const bcRef = useRef(null);
   const { authFetch } = useAuth();
+  const [actionLoading, setActionLoading] = useState(null);
+  const [isPending, startTransition] = useTransition();
+  const [alert, setAlert] = useState({ show: false, message: '', type: 'success' });
+  const [badgePulse, setBadgePulse] = useState(false);
 
   // 🔹 Cargar historial una sola vez
   useEffect(() => {
     (async () => {
+      setActionLoading('load');
       try {
         const res = await authFetch('http://127.0.0.1:8000/api/notifications');
         if (res.ok) {
           const data = await res.json();
-          setNotifications(Array.isArray(data) ? data : []);
+          startTransition(() => setNotifications(Array.isArray(data) ? data : []));
         }
       } catch (e) {
         console.error('Error cargando notificaciones:', e);
+        setAlert({ show: true, message: 'Error cargando notificaciones', type: 'error' });
+      } finally {
+        setActionLoading(null);
       }
     })();
   }, [authFetch]);
@@ -52,10 +62,17 @@ export default function NotificationButton() {
 
       if (!notification.id) notification.id = Date.now();
 
-      setNotifications(prev => {
-        if (prev.some(n => n.id === notification.id)) return prev;
-        return [notification, ...prev];
+      startTransition(() => {
+        setNotifications(prev => {
+          if (prev.some(n => n.id === notification.id)) return prev;
+          return [notification, ...prev];
+        });
       });
+
+      // alerta y pulso visual breve
+      setAlert({ show: true, message: notification.message || 'Nueva notificación', type: 'success' });
+      setBadgePulse(true);
+      setTimeout(() => setBadgePulse(false), 900);
 
       bcRef.current?.postMessage(notification);
     });
@@ -82,6 +99,9 @@ export default function NotificationButton() {
     éxito: '🎉',
   };
 
+  const badgeRef = useRef(null);
+  const dropdownRef = useRef(null);
+
   return (
     <div className="notification-wrapper">
       <button
@@ -89,14 +109,14 @@ export default function NotificationButton() {
         onClick={() => setOpen(o => !o)}
         title="Notificaciones en tiempo real"
       >
-        🔔
-        {unreadCount > 0 && (
-          <span className="notification-badge">{unreadCount}</span>
-        )}
+        {actionLoading === 'load' ? '⏳' : '🔔'}
+        <CSSTransition nodeRef={badgeRef} in={unreadCount > 0} timeout={360} classNames="badge" unmountOnExit>
+          <span ref={badgeRef} className={`notification-badge ${badgePulse ? 'pulse' : ''}`}>{unreadCount}</span>
+        </CSSTransition>
       </button>
 
-      {open && (
-        <div className="notification-dropdown">
+      <CSSTransition nodeRef={dropdownRef} in={open} timeout={220} classNames="notif-dropdown" unmountOnExit>
+        <div ref={dropdownRef} className="notification-dropdown">
           <div className="notification-header">
             <h3>📬 Notificaciones</h3>
             {notifications.length > 0 && (
@@ -126,7 +146,9 @@ export default function NotificationButton() {
             </ul>
           )}
         </div>
-      )}
+      </CSSTransition>
+
+      <TransitionAlert show={alert.show} message={alert.message} type={alert.type} onClose={() => setAlert({ ...alert, show: false })} />
     </div>
   );
 }
