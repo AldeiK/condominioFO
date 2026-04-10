@@ -15,40 +15,56 @@ export default function Login() {
     e.preventDefault();
     setError(null);
     setLoading(true);
-    
-    const result = await login(email, password);
-    setLoading(false);
-    
-    if (result.success) {
-      navigate('/');
-    } else {
+
+    try {
+      const result = await login(email, password);
+      setLoading(false);
+
+      if (result.success) {
+        navigate('/');
+        return;
+      }
+
+      if (result.requiresVerification) {
+        navigate(`/verify-email?email=${encodeURIComponent(result.email || email)}`);
+        return;
+      }
+
       setError(result.message);
+    } catch (err) {
+      setLoading(false);
+      setError('Error inesperado al iniciar sesión');
     }
   };
 
   return (
     <div className="auth-container">
       <h2>🔑 Iniciar Sesión</h2>
+
       {error && <p className="error">❌ {error}</p>}
+
       <form onSubmit={handleSubmit} className="auth-form">
         <input
           type="email"
           placeholder="Correo electrónico"
           value={email}
-          onChange={e => setEmail(e.target.value)}
+          onChange={(e) => setEmail(e.target.value)}
           required
         />
+
         <input
           type="password"
           placeholder="Contraseña"
           value={password}
-          onChange={e => setPassword(e.target.value)}
+          onChange={(e) => setPassword(e.target.value)}
           required
         />
+
         <button type="submit" disabled={loading}>
           {loading ? '⏳ Verificando...' : '✅ Entrar'}
         </button>
       </form>
+
       <p className="small-text">
         ¿No tienes cuenta? <Link to="/register">Crea una aquí</Link>
       </p>

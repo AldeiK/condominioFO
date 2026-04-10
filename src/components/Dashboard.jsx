@@ -4,8 +4,16 @@ import ChatDepartamento from './ChatDepartamento';
 import DepartmentManager from './DepartmentManager';
 
 export default function Dashboard() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const [tab, setTab] = useState('chat');
+
+  if (loading) {
+    return <div className="dashboard">Cargando sesión...</div>;
+  }
+
+  if (!user) {
+    return <div className="dashboard">No hay sesión activa.</div>;
+  }
 
   return (
     <div className="dashboard">

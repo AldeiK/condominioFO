@@ -1,4 +1,4 @@
-import { useState, useEffect, useTransition } from 'react';
+import React, { useState, useEffect, useTransition } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import './DepartmentManager.css';
 import TransitionAlert from './TransitionAlert';

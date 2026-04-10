@@ -6,6 +6,7 @@ import { useNavigate, Link } from 'react-router-dom';
 export default function Register() {
   const { register } = useAuth();
   const navigate = useNavigate();
+
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -37,7 +38,7 @@ export default function Register() {
     setLoading(false);
 
     if (result.success) {
-      navigate('/login');
+      navigate(`/verify-email?email=${encodeURIComponent(email)}`);
     } else {
       setError(result.message);
     }
@@ -47,39 +48,45 @@ export default function Register() {
     <div className="auth-container">
       <h2>📝 Crear Cuenta</h2>
       {error && <p className="error">❌ {error}</p>}
+
       <form onSubmit={handleSubmit} className="auth-form">
         <input
           type="text"
           placeholder="Tu nombre completo"
           value={name}
-          onChange={e => setName(e.target.value)}
+          onChange={(e) => setName(e.target.value)}
           required
         />
+
         <input
           type="email"
           placeholder="Correo electrónico"
           value={email}
-          onChange={e => setEmail(e.target.value)}
+          onChange={(e) => setEmail(e.target.value)}
           required
         />
+
         <input
           type="password"
-          placeholder="Contraseña (mín. 6 caracteres)"
+          placeholder="Contraseña"
           value={password}
-          onChange={e => setPassword(e.target.value)}
+          onChange={(e) => setPassword(e.target.value)}
           required
         />
+
         <input
           type="password"
           placeholder="Confirmar contraseña"
           value={password2}
-          onChange={e => setPassword2(e.target.value)}
+          onChange={(e) => setPassword2(e.target.value)}
           required
         />
+
         <button type="submit" disabled={loading}>
-          {loading ? '⏳ Registrando...' : '✅ Registrar'}
+          {loading ? '⏳ Creando...' : '✅ Registrarme'}
         </button>
       </form>
+
       <p className="small-text">
         ¿Ya tienes cuenta? <Link to="/login">Inicia sesión</Link>
       </p>

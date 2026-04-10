@@ -10,49 +10,68 @@ export default function NotificationButton() {
   const [open, setOpen] = useState(false);
   const [connected, setConnected] = useState(false);
   const bcRef = useRef(null);
-  const { authFetch } = useAuth();
+  const { authFetch, user, loading } = useAuth();
   const [actionLoading, setActionLoading] = useState(null);
   const [isPending, startTransition] = useTransition();
   const [alert, setAlert] = useState({ show: false, message: '', type: 'success' });
   const [badgePulse, setBadgePulse] = useState(false);
 
-  // 🔹 Cargar historial una sola vez
   useEffect(() => {
+    if (loading || !user) return;
+
+    let cancelled = false;
+
     (async () => {
       setActionLoading('load');
       try {
         const res = await authFetch('http://127.0.0.1:8000/api/notifications');
-        if (res.ok) {
+
+        if (!cancelled && res.ok) {
           const data = await res.json();
-          startTransition(() => setNotifications(Array.isArray(data) ? data : []));
+          startTransition(() => {
+            setNotifications(Array.isArray(data) ? data : []);
+          });
         }
       } catch (e) {
-        console.error('Error cargando notificaciones:', e);
-        setAlert({ show: true, message: 'Error cargando notificaciones', type: 'error' });
+        if (!cancelled) {
+          console.error('Error cargando notificaciones:', e);
+          setAlert({ show: true, message: 'Error cargando notificaciones', type: 'error' });
+        }
       } finally {
-        setActionLoading(null);
+        if (!cancelled) {
+          setActionLoading(null);
+        }
       }
     })();
-  }, [authFetch]);
 
-  // 🔹 Sincronizar entre pestañas
+    return () => {
+      cancelled = true;
+    };
+  }, [authFetch, user, loading]);
+
   useEffect(() => {
+    if (loading || !user) return;
+
     try {
       bcRef.current = new BroadcastChannel('notifications');
       bcRef.current.onmessage = (e) => {
         const n = e.data;
-        setNotifications(prev => {
-          if (prev.some(p => p.id === n.id)) return prev;
+
+        setNotifications((prev) => {
+          if (prev.some((p) => p.id === n.id)) return prev;
           return [n, ...prev];
         });
       };
-    } catch {}
+    } catch {
+      //
+    }
 
     return () => bcRef.current?.close();
-  }, []);
+  }, [user, loading]);
 
-  // 🔹 WebSocket en tiempo real (sin refresh)
   useEffect(() => {
+    if (loading || !user) return;
+
     const channel = echo.channel('notifications');
 
     channel.listen('.notification.sent', (payload) => {
@@ -60,17 +79,23 @@ export default function NotificationButton() {
 
       if (!notification?.message) return;
 
-      if (!notification.id) notification.id = Date.now();
+      if (!notification.id) {
+        notification.id = Date.now();
+      }
 
       startTransition(() => {
-        setNotifications(prev => {
-          if (prev.some(n => n.id === notification.id)) return prev;
+        setNotifications((prev) => {
+          if (prev.some((n) => n.id === notification.id)) return prev;
           return [notification, ...prev];
         });
       });
 
-      // alerta y pulso visual breve
-      setAlert({ show: true, message: notification.message || 'Nueva notificación', type: 'success' });
+      setAlert({
+        show: true,
+        message: notification.message || 'Nueva notificación',
+        type: 'success',
+      });
+
       setBadgePulse(true);
       setTimeout(() => setBadgePulse(false), 900);
 
@@ -83,7 +108,7 @@ export default function NotificationButton() {
       echo.leave('notifications');
       setConnected(false);
     };
-  }, []);
+  }, [user, loading]);
 
   const unreadCount = notifications.length;
 
@@ -106,16 +131,30 @@ export default function NotificationButton() {
     <div className="notification-wrapper">
       <button
         className={`notification-button ${connected ? 'connected' : 'disconnected'}`}
-        onClick={() => setOpen(o => !o)}
+        onClick={() => setOpen((o) => !o)}
         title="Notificaciones en tiempo real"
       >
         {actionLoading === 'load' ? '⏳' : '🔔'}
-        <CSSTransition nodeRef={badgeRef} in={unreadCount > 0} timeout={360} classNames="badge" unmountOnExit>
-          <span ref={badgeRef} className={`notification-badge ${badgePulse ? 'pulse' : ''}`}>{unreadCount}</span>
+        <CSSTransition
+          nodeRef={badgeRef}
+          in={unreadCount > 0}
+          timeout={360}
+          classNames="badge"
+          unmountOnExit
+        >
+          <span ref={badgeRef} className={`notification-badge ${badgePulse ? 'pulse' : ''}`}>
+            {unreadCount}
+          </span>
         </CSSTransition>
       </button>
 
-      <CSSTransition nodeRef={dropdownRef} in={open} timeout={220} classNames="notif-dropdown" unmountOnExit>
+      <CSSTransition
+        nodeRef={dropdownRef}
+        in={open}
+        timeout={220}
+        classNames="notif-dropdown"
+        unmountOnExit
+      >
         <div ref={dropdownRef} className="notification-dropdown">
           <div className="notification-header">
             <h3>📬 Notificaciones</h3>
@@ -133,9 +172,7 @@ export default function NotificationButton() {
               {notifications.map((n) => (
                 <li key={n.id} className="notification-item">
                   <div className="notification-link">
-                    <span className="notification-icon">
-                      {iconMap[n.type] || '🔔'}
-                    </span>
+                    <span className="notification-icon">{iconMap[n.type] || '🔔'}</span>
                     <div className="notification-content">
                       <strong>{n.type || 'Notificación'}</strong>
                       <p>{n.message}</p>
@@ -148,7 +185,12 @@ export default function NotificationButton() {
         </div>
       </CSSTransition>
 
-      <TransitionAlert show={alert.show} message={alert.message} type={alert.type} onClose={() => setAlert({ ...alert, show: false })} />
+      <TransitionAlert
+        show={alert.show}
+        message={alert.message}
+        type={alert.type}
+        onClose={() => setAlert({ ...alert, show: false })}
+      />
     </div>
   );
 }
