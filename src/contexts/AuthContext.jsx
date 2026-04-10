@@ -236,6 +236,63 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const sendResetCode = async (email) => {
+    try {
+      const res = await fetch(buildApiUrl('/api/forgot-password/code'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await res.json();
+
+      return {
+        success: res.ok,
+        message: data.message || 'No se pudo enviar el código',
+      };
+    } catch (error) {
+      console.error('sendResetCode error:', error);
+      return {
+        success: false,
+        message: 'No se pudo conectar con el servidor',
+      };
+    }
+  };
+
+  const resetPasswordWithCode = async (email, code, password, password_confirmation) => {
+    try {
+      const res = await fetch(buildApiUrl('/api/reset-password/code'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          code,
+          password,
+          password_confirmation,
+        }),
+      });
+
+      const data = await res.json();
+
+      return {
+        success: res.ok,
+        message: data.message || 'No se pudo restablecer la contraseña',
+      };
+    } catch (error) {
+      console.error('resetPasswordWithCode error:', error);
+      return {
+        success: false,
+        message: 'No se pudo conectar con el servidor',
+      };
+    }
+  };
+
   const changePassword = async (current_password, password, password_confirmation) => {
     try {
       const res = await authFetch('/api/change-password', {
@@ -321,6 +378,8 @@ export function AuthProvider({ children }) {
         register,
         authFetch,
         resendVerificationEmail,
+        sendResetCode,
+        resetPasswordWithCode,
         changePassword,
         API_URL,
         buildApiUrl,

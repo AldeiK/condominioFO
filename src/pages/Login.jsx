@@ -1,11 +1,16 @@
 import { useState } from 'react';
 import '../components/Auth.css';
 import { useAuth } from '../contexts/AuthContext';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 
 export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  const verified = searchParams.get('verified');
+  const verifiedMessage = searchParams.get('message');
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
@@ -41,6 +46,14 @@ export default function Login() {
     <div className="auth-container">
       <h2>🔑 Iniciar Sesión</h2>
 
+      {verified === '1' && (
+        <p className="success-message">✅ Correo verificado correctamente. Ya puedes iniciar sesión.</p>
+      )}
+
+      {verified === '0' && (
+        <p className="error-message">❌ {verifiedMessage || 'No se pudo verificar el correo.'}</p>
+      )}
+
       {error && <p className="error">❌ {error}</p>}
 
       <form onSubmit={handleSubmit} className="auth-form">
@@ -67,6 +80,10 @@ export default function Login() {
 
       <p className="small-text">
         ¿No tienes cuenta? <Link to="/register">Crea una aquí</Link>
+      </p>
+
+      <p className="small-text">
+        <Link to="/forgot-password">¿Olvidaste tu contraseña?</Link>
       </p>
     </div>
   );

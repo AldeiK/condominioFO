@@ -7,6 +7,8 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import VerifyEmail from './pages/VerifyEmail';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import AccountSecurity from './pages/AccountSecurity';
 import ErrorBoundary from './components/ErrorBoundary';
 
@@ -49,6 +51,8 @@ function App() {
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/verify-email" element={<VerifyEmail />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="*" element={<Navigate to="/login" />} />
               </Routes>
             </ErrorBoundary>
@@ -64,7 +68,9 @@ function HeaderWrapper() {
   const hide =
     location.pathname === '/login' ||
     location.pathname === '/register' ||
-    location.pathname === '/verify-email';
+    location.pathname === '/verify-email' ||
+    location.pathname === '/forgot-password' ||
+    location.pathname === '/reset-password';
 
   if (hide) return null;
 
