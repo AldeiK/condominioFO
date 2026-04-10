@@ -10,11 +10,20 @@ export default function UserControls() {
     navigate('/login');
   };
 
+  const goToSecurity = () => {
+    navigate('/security');
+  };
+
   if (!user) return null;
 
   return (
     <div className="user-controls">
       <span className="user-name">{user.name}</span>
+
+      <button className="security-button" onClick={goToSecurity}>
+        🔐 Seguridad
+      </button>
+
       <button className="logout-button" onClick={handleLogout}>
         Cerrar sesión
       </button>

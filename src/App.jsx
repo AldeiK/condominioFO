@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import VerifyEmail from './pages/VerifyEmail';
+import AccountSecurity from './pages/AccountSecurity';
 import ErrorBoundary from './components/ErrorBoundary';
 
 function App() {
@@ -35,6 +36,16 @@ function App() {
                     </PrivateRoute>
                   }
                 />
+
+                <Route
+                  path="/security"
+                  element={
+                    <PrivateRoute>
+                      <AccountSecurity />
+                    </PrivateRoute>
+                  }
+                />
+
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/verify-email" element={<VerifyEmail />} />

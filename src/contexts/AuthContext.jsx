@@ -26,6 +26,20 @@ function buildApiUrl(url) {
   return url;
 }
 
+function getDeviceName() {
+  let deviceId = localStorage.getItem('device_id');
+
+  if (!deviceId) {
+    deviceId = `device-${Math.random().toString(36).slice(2, 10)}-${Date.now()}`;
+    localStorage.setItem('device_id', deviceId);
+  }
+
+  const platform = navigator.platform || 'unknown-platform';
+  const agent = navigator.userAgent || 'unknown-browser';
+
+  return `${platform} | ${agent.slice(0, 40)} | ${deviceId}`;
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(localStorage.getItem('token'));
@@ -120,7 +134,11 @@ export function AuthProvider({ children }) {
           'Content-Type': 'application/json',
           Accept: 'application/json',
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({
+          email,
+          password,
+          device_name: getDeviceName(),
+        }),
       });
 
       const data = await res.json();
@@ -169,9 +187,19 @@ export function AuthProvider({ children }) {
         };
       }
 
+      let message = data.message || 'Register failed';
+
+      if (data.errors) {
+        const firstError = Object.values(data.errors)[0];
+        if (Array.isArray(firstError) && firstError.length > 0) {
+          message = firstError[0];
+        }
+      }
+
       return {
         success: false,
-        message: data.message || 'Register failed',
+        message,
+        errors: data.errors || null,
       };
     } catch (error) {
       console.error('register error:', error);
@@ -208,6 +236,59 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const changePassword = async (current_password, password, password_confirmation) => {
+    try {
+      const res = await authFetch('/api/change-password', {
+        method: 'POST',
+        body: JSON.stringify({
+          current_password,
+          password,
+          password_confirmation,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        clearSession();
+      }
+
+      return {
+        success: res.ok,
+        message: data.message || 'No se pudo cambiar la contraseña',
+      };
+    } catch (error) {
+      console.error('changePassword error:', error);
+      return {
+        success: false,
+        message: 'No se pudo conectar con el servidor',
+      };
+    }
+  };
+
+  const logoutAll = async () => {
+    try {
+      const res = await authFetch('/api/logout-all', {
+        method: 'POST',
+      });
+
+      const data = await res.json();
+      clearSession();
+
+      return {
+        success: res.ok,
+        message: data.message || 'No se pudo cerrar sesión en todos los dispositivos',
+      };
+    } catch (error) {
+      console.error('logoutAll error:', error);
+      clearSession();
+      return {
+        success: false,
+        message: 'No se pudo conectar con el servidor',
+      };
+    }
+  };
+
   const logout = async () => {
     const currentToken = localStorage.getItem('token');
 
@@ -236,9 +317,11 @@ export function AuthProvider({ children }) {
         loading,
         login,
         logout,
+        logoutAll,
         register,
         authFetch,
         resendVerificationEmail,
+        changePassword,
         API_URL,
         buildApiUrl,
       }}
