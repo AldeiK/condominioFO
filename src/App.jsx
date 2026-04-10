@@ -3,7 +3,7 @@ import Dashboard from './components/Dashboard';
 import NotificationButton from './components/NotificationButton';
 import UserControls from './components/UserControls';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { AuthProvider } from './contexts/AuthContext';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import VerifyEmail from './pages/VerifyEmail';
@@ -11,16 +11,11 @@ import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import AccountSecurity from './pages/AccountSecurity';
 import ErrorBoundary from './components/ErrorBoundary';
+import ProtectedRoute from './components/ProtectedRoute';
+import RoleRoute from './components/RoleRoute';
+import DepartmentManager from './components/DepartmentManager';
 
 function App() {
-  const PrivateRoute = ({ children }) => {
-    const { user, loading } = useAuth();
-
-    if (loading) return <p>Cargando...</p>;
-
-    return user ? children : <Navigate to="/login" />;
-  };
-
   return (
     <AuthProvider>
       <BrowserRouter>
@@ -33,18 +28,29 @@ function App() {
                 <Route
                   path="/"
                   element={
-                    <PrivateRoute>
+                    <ProtectedRoute>
                       <Dashboard />
-                    </PrivateRoute>
+                    </ProtectedRoute>
                   }
                 />
 
                 <Route
                   path="/security"
                   element={
-                    <PrivateRoute>
+                    <ProtectedRoute>
                       <AccountSecurity />
-                    </PrivateRoute>
+                    </ProtectedRoute>
+                  }
+                />
+
+                <Route
+                  path="/departments"
+                  element={
+                    <ProtectedRoute>
+                      <RoleRoute allowedRoles={['admin']}>
+                        <DepartmentManager />
+                      </RoleRoute>
+                    </ProtectedRoute>
                   }
                 />
 
@@ -65,6 +71,7 @@ function App() {
 
 function HeaderWrapper() {
   const location = useLocation();
+
   const hide =
     location.pathname === '/login' ||
     location.pathname === '/register' ||

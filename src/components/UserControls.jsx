@@ -14,15 +14,29 @@ export default function UserControls() {
     navigate('/security');
   };
 
+  const goToDepartments = () => {
+    navigate('/departments');
+  };
+
   if (!user) return null;
+
+  const isAdmin = user?.role === 'admin';
 
   return (
     <div className="user-controls">
-      <span className="user-name">{user.name}</span>
+      <span className="user-name">
+        {user.name} {user?.role ? `(${user.role})` : ''}
+      </span>
 
       <button className="security-button" onClick={goToSecurity}>
         🔐 Seguridad
       </button>
+
+      {isAdmin && (
+        <button className="security-button" onClick={goToDepartments}>
+          🏢 Departamentos
+        </button>
+      )}
 
       <button className="logout-button" onClick={handleLogout}>
         Cerrar sesión
